@@ -201,7 +201,7 @@
     let pendingDelete = null;
     let selectedTemplate = null;
     let firebaseDb = null;
-    let localDataSync = new Map();
+    let firebaseReady = false;
 
     const defaultConfig = {
       app_title: 'Um Só Propósito Digital',
@@ -222,12 +222,18 @@
     // Initialize Firebase
     async function initFirebase() {
       try {
+        // Wait for Firebase to load
+        while (typeof firebase === 'undefined') {
+          await new Promise(r => setTimeout(r, 100));
+        }
         const app = firebase.initializeApp(firebaseConfig);
         firebaseDb = firebase.database(app);
         await firebase.auth(app).signInAnonymously();
+        firebaseReady = true;
         setupRealtimeSync();
       } catch (err) {
         console.error('Firebase init error:', err);
+        // Don't show error - use Data SDK as fallback silently
       }
     }
 
@@ -237,40 +243,51 @@
       dbRef.on('value', (snapshot) => {
         if (snapshot.exists()) {
           const fbData = snapshot.val();
-          allData = Object.values(fbData).map((item, idx) => ({
-            ...item,
-            __backendId: Object.keys(snapshot.val())[idx]
+          const keys = Object.keys(fbData);
+          allData = keys.map(key => ({
+            ...fbData[key],
+            __backendId: key
           }));
+          renderAll();
+        } else {
+          allData = [];
           renderAll();
         }
       });
     }
 
     function saveToFirebase(data) {
-      if (!firebaseDb) {
-        window.dataSdk.create(data);
-        return;
+      if (!firebaseReady) {
+        showToast('Firebase não está pronto. Tente novamente.');
+        return Promise.reject('Firebase not ready');
       }
       const dbRef = firebase.database().ref('shared_data');
-      const newRef = dbRef.push(data);
-      newRef.catch(err => console.error('Firebase save error:', err));
+      return dbRef.push(data).catch(err => {
+        console.error('Firebase save error:', err);
+        throw err;
+      });
     }
 
     function updateInFirebase(id, data) {
-      if (!firebaseDb) {
-        window.dataSdk.update(data);
-        return;
+      if (!firebaseReady) {
+        showToast('Firebase não está pronto. Tente novamente.');
+        return Promise.reject('Firebase not ready');
       }
-      firebase.database().ref(`shared_data/${id}`).set(data);
+      return firebase.database().ref(`shared_data/${id}`).set(data).catch(err => {
+        console.error('Firebase update error:', err);
+        throw err;
+      });
     }
 
     function deleteFromFirebase(id) {
-      if (!firebaseDb) {
-        const item = allData.find(d => d.__backendId === id);
-        if (item) window.dataSdk.delete(item);
-        return;
+      if (!firebaseReady) {
+        showToast('Firebase não está pronto. Tente novamente.');
+        return Promise.reject('Firebase not ready');
       }
-      firebase.database().ref(`shared_data/${id}`).remove();
+      return firebase.database().ref(`shared_data/${id}`).remove().catch(err => {
+        console.error('Firebase delete error:', err);
+        throw err;
+      });
     }
 
     // Element SDK
@@ -427,15 +444,25 @@
         flow_active: true,
         created_at: new Date().toISOString()
       };
-      if (firebaseDb) {
-        saveToFirebase(clientData);
-      } else {
-        const result = await window.dataSdk.create(clientData);
-        if (!result.isOk) showToast('Erro ao salvar cliente.');
+      try {
+        if (firebaseReady) {
+          await saveToFirebase(clientData);
+        } else {
+          const result = await window.dataSdk.create(clientData);
+          if (!result.isOk) {
+            showToast('Erro ao salvar cliente.');
+            btn.disabled = false;
+            return;
+          }
+        }
+        e.target.reset();
+        hideClientForm();
+        showToast('Cliente salvo com sucesso! ✨');
+      } catch (err) {
+        console.error('Error saving client:', err);
+        showToast('Erro ao salvar cliente. Tente novamente.');
+        btn.disabled = false;
       }
-      btn.disabled = false;
-      e.target.reset();
-      hideClientForm();
     }
 
     function showFlowForm() { document.getElementById('flow-form-container').classList.remove('hidden'); }
@@ -459,25 +486,40 @@
         flow_active: true,
         created_at: new Date().toISOString()
       };
-      if (firebaseDb) {
-        saveToFirebase(flowData);
-      } else {
-        const result = await window.dataSdk.create(flowData);
-        if (!result.isOk) showToast('Erro ao salvar automação.');
+      try {
+        if (firebaseReady) {
+          await saveToFirebase(flowData);
+        } else {
+          const result = await window.dataSdk.create(flowData);
+          if (!result.isOk) {
+            showToast('Erro ao salvar automação.');
+            btn.disabled = false;
+            return;
+          }
+        }
+        e.target.reset();
+        hideFlowForm();
+        showToast('Automação criada com sucesso! ✨');
+      } catch (err) {
+        console.error('Error saving flow:', err);
+        showToast('Erro ao salvar automação. Tente novamente.');
+        btn.disabled = false;
       }
-      btn.disabled = false;
-      e.target.reset();
-      hideFlowForm();
     }
 
     async function toggleFlow(id) {
       const flow = allData.find(d => d.__backendId === id);
       if (!flow) return;
       const updated = { ...flow, flow_active: !flow.flow_active };
-      if (firebaseDb) {
-        updateInFirebase(id, updated);
-      } else {
-        await window.dataSdk.update(updated);
+      try {
+        if (firebaseReady) {
+          await updateInFirebase(id, updated);
+        } else {
+          await window.dataSdk.update(updated);
+        }
+      } catch (err) {
+        console.error('Error toggling flow:', err);
+        showToast('Erro ao atualizar automação.');
       }
     }
 
@@ -494,11 +536,17 @@
 
     async function confirmDelete() {
       if (!pendingDelete) return;
-      if (firebaseDb) {
-        deleteFromFirebase(pendingDelete);
-      } else {
-        const item = allData.find(d => d.__backendId === pendingDelete);
-        if (item) await window.dataSdk.delete(item);
+      try {
+        if (firebaseReady) {
+          await deleteFromFirebase(pendingDelete);
+        } else {
+          const item = allData.find(d => d.__backendId === pendingDelete);
+          if (item) await window.dataSdk.delete(item);
+        }
+        showToast('Item excluído com sucesso.');
+      } catch (err) {
+        console.error('Error deleting item:', err);
+        showToast('Erro ao excluir item. Tente novamente.');
       }
       cancelDelete();
     }
@@ -584,16 +632,21 @@
         flow_active: true,
         created_at: new Date().toISOString()
       };
-      if (firebaseDb) {
-        saveToFirebase(templateData);
-      } else {
-        const result = await window.dataSdk.create(templateData);
-        if (!result.isOk) { showToast('Erro ao criar template.'); btn.disabled = false; return; }
+      try {
+        if (firebaseReady) {
+          await saveToFirebase(templateData);
+        } else {
+          const result = await window.dataSdk.create(templateData);
+          if (!result.isOk) { showToast('Erro ao criar template.'); btn.disabled = false; return; }
+        }
+        cancelTemplate();
+        showToast(`Template "${template.name}" criado com sucesso! ✨`);
+        switchTab('flows');
+      } catch (err) {
+        console.error('Error creating template:', err);
+        showToast('Erro ao criar template. Tente novamente.');
+        btn.disabled = false;
       }
-      btn.disabled = false;
-      cancelTemplate();
-      showToast(`Template "${template.name}" criado com sucesso! ✨`);
-      switchTab('flows');
     }
 
     function updateAnalytics() {
@@ -629,5 +682,5 @@
 
     lucide.createIcons();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f2e08d4265e5692',t:'MTc3NzI5NTA4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f2e1f5af7cc5692',t:'MTc3NzI5NjAwNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
