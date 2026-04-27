@@ -8,6 +8,9 @@
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="/_sdk/data_sdk.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
   <style>
     * { font-family: 'DM Sans', sans-serif; }
@@ -197,11 +200,78 @@
     let currentTab = 'clients';
     let pendingDelete = null;
     let selectedTemplate = null;
+    let firebaseDb = null;
+    let localDataSync = new Map();
 
     const defaultConfig = {
       app_title: 'Um Só Propósito Digital',
       welcome_message: 'Painel de Automações de Atendimento'
     };
+
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBFyBsYxFAfhkHX_KAe-9vFpJWm1S2okqM",
+      authDomain: "painel-um-so.firebaseapp.com",
+      databaseURL: "https://painel-um-so-default-rtdb.firebaseio.com",
+      projectId: "painel-um-so",
+      storageBucket: "painel-um-so.firebasestorage.app",
+      messagingSenderId: "710936866181",
+      appId: "1:710936866181:web:7907e107490cb0d36468ec"
+    };
+
+    // Initialize Firebase
+    async function initFirebase() {
+      try {
+        const app = firebase.initializeApp(firebaseConfig);
+        firebaseDb = firebase.database(app);
+        await firebase.auth(app).signInAnonymously();
+        setupRealtimeSync();
+      } catch (err) {
+        console.error('Firebase init error:', err);
+      }
+    }
+
+    function setupRealtimeSync() {
+      if (!firebaseDb) return;
+      const dbRef = firebase.database().ref('shared_data');
+      dbRef.on('value', (snapshot) => {
+        if (snapshot.exists()) {
+          const fbData = snapshot.val();
+          allData = Object.values(fbData).map((item, idx) => ({
+            ...item,
+            __backendId: Object.keys(snapshot.val())[idx]
+          }));
+          renderAll();
+        }
+      });
+    }
+
+    function saveToFirebase(data) {
+      if (!firebaseDb) {
+        window.dataSdk.create(data);
+        return;
+      }
+      const dbRef = firebase.database().ref('shared_data');
+      const newRef = dbRef.push(data);
+      newRef.catch(err => console.error('Firebase save error:', err));
+    }
+
+    function updateInFirebase(id, data) {
+      if (!firebaseDb) {
+        window.dataSdk.update(data);
+        return;
+      }
+      firebase.database().ref(`shared_data/${id}`).set(data);
+    }
+
+    function deleteFromFirebase(id) {
+      if (!firebaseDb) {
+        const item = allData.find(d => d.__backendId === id);
+        if (item) window.dataSdk.delete(item);
+        return;
+      }
+      firebase.database().ref(`shared_data/${id}`).remove();
+    }
 
     // Element SDK
     window.elementSdk.init({
@@ -231,6 +301,7 @@
     };
 
     window.dataSdk.init(dataHandler);
+    initFirebase();
 
     function getClients() {
       return allData.filter(d => d.type === 'client');
@@ -343,7 +414,7 @@
       if (allData.length >= 999) { showToast('Limite de registros atingido!'); return; }
       const btn = e.target.querySelector('button[type="submit"]');
       btn.disabled = true;
-      const result = await window.dataSdk.create({
+      const clientData = {
         type: 'client',
         client_name: document.getElementById('client-name').value,
         client_platform: document.getElementById('client-platform').value,
@@ -355,12 +426,16 @@
         flow_platform: '',
         flow_active: true,
         created_at: new Date().toISOString()
-      });
+      };
+      if (firebaseDb) {
+        saveToFirebase(clientData);
+      } else {
+        const result = await window.dataSdk.create(clientData);
+        if (!result.isOk) showToast('Erro ao salvar cliente.');
+      }
       btn.disabled = false;
-      if (result.isOk) {
-        e.target.reset();
-        hideClientForm();
-      } else showToast('Erro ao salvar cliente.');
+      e.target.reset();
+      hideClientForm();
     }
 
     function showFlowForm() { document.getElementById('flow-form-container').classList.remove('hidden'); }
@@ -371,7 +446,7 @@
       if (allData.length >= 999) { showToast('Limite de registros atingido!'); return; }
       const btn = e.target.querySelector('button[type="submit"]');
       btn.disabled = true;
-      const result = await window.dataSdk.create({
+      const flowData = {
         type: 'flow',
         client_name: '',
         client_platform: '',
@@ -383,18 +458,27 @@
         flow_platform: document.getElementById('flow-platform').value,
         flow_active: true,
         created_at: new Date().toISOString()
-      });
+      };
+      if (firebaseDb) {
+        saveToFirebase(flowData);
+      } else {
+        const result = await window.dataSdk.create(flowData);
+        if (!result.isOk) showToast('Erro ao salvar automação.');
+      }
       btn.disabled = false;
-      if (result.isOk) {
-        e.target.reset();
-        hideFlowForm();
-      } else showToast('Erro ao salvar automação.');
+      e.target.reset();
+      hideFlowForm();
     }
 
     async function toggleFlow(id) {
       const flow = allData.find(d => d.__backendId === id);
       if (!flow) return;
-      await window.dataSdk.update({ ...flow, flow_active: !flow.flow_active });
+      const updated = { ...flow, flow_active: !flow.flow_active };
+      if (firebaseDb) {
+        updateInFirebase(id, updated);
+      } else {
+        await window.dataSdk.update(updated);
+      }
     }
 
     function requestDelete(id, name) {
@@ -410,8 +494,12 @@
 
     async function confirmDelete() {
       if (!pendingDelete) return;
-      const item = allData.find(d => d.__backendId === pendingDelete);
-      if (item) await window.dataSdk.delete(item);
+      if (firebaseDb) {
+        deleteFromFirebase(pendingDelete);
+      } else {
+        const item = allData.find(d => d.__backendId === pendingDelete);
+        if (item) await window.dataSdk.delete(item);
+      }
       cancelDelete();
     }
 
@@ -483,7 +571,7 @@
       if (!template) return;
       const btn = event.target;
       btn.disabled = true;
-      const result = await window.dataSdk.create({
+      const templateData = {
         type: 'flow',
         client_name: '',
         client_platform: '',
@@ -495,13 +583,17 @@
         flow_platform: 'whatsapp',
         flow_active: true,
         created_at: new Date().toISOString()
-      });
+      };
+      if (firebaseDb) {
+        saveToFirebase(templateData);
+      } else {
+        const result = await window.dataSdk.create(templateData);
+        if (!result.isOk) { showToast('Erro ao criar template.'); btn.disabled = false; return; }
+      }
       btn.disabled = false;
-      if (result.isOk) {
-        cancelTemplate();
-        showToast(`Template "${template.name}" criado com sucesso! ✨`);
-        switchTab('flows');
-      } else showToast('Erro ao criar template.');
+      cancelTemplate();
+      showToast(`Template "${template.name}" criado com sucesso! ✨`);
+      switchTab('flows');
     }
 
     function updateAnalytics() {
@@ -537,5 +629,5 @@
 
     lucide.createIcons();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f2dda1f767d5692',t:'MTc3NzI5MzE2OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f2e08d4265e5692',t:'MTc3NzI5NTA4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
