@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Um Só Propósito Digital - Automações</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="/_sdk/data_sdk.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-auth-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
   <style>
     * { font-family: 'DM Sans', sans-serif; }
@@ -221,21 +221,20 @@
 
     // Initialize Firebase
     async function initFirebase() {
-      try {
-        // Wait for Firebase to load
-        while (typeof firebase === 'undefined') {
-          await new Promise(r => setTimeout(r, 100));
-        }
-        const app = firebase.initializeApp(firebaseConfig);
-        firebaseDb = firebase.database(app);
-        await firebase.auth(app).signInAnonymously();
-        firebaseReady = true;
-        setupRealtimeSync();
-      } catch (err) {
-        console.error('Firebase init error:', err);
-        // Don't show error - use Data SDK as fallback silently
-      }
-    }
+  try {
+    // Inicializa o App
+    const app = firebase.initializeApp(firebaseConfig);
+    // Para o Realtime Database na versão Compat, usamos:
+    firebaseDb = firebase.database(); 
+    
+    await firebase.auth().signInAnonymously();
+    firebaseReady = true;
+    setupRealtimeSync();
+    console.log("Firebase conectado com sucesso!");
+  } catch (err) {
+    console.error('Firebase init error:', err);
+  }
+}
 
     function setupRealtimeSync() {
       if (!firebaseDb) return;
