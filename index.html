@@ -18,8 +18,6 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .platform-whatsapp { border-left: 3px solid #25D366; }
     .platform-instagram { border-left: 3px solid #E1306C; }
-    .platform-facebook { border-left: 3px solid #1877F2; }
-    .platform-telegram { border-left: 3px solid #0088cc; }
     .toggle-on { background: #38bdf8; }
     .toggle-off { background: #475569; }
   </style>
@@ -55,8 +53,8 @@
      <div id="client-form-container" class="hidden mb-6 fade-in">
       <div class="bg-slate-900 border border-slate-700 rounded-xl p-5">
        <form onsubmit="saveClient(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><label class="block text-sm text-slate-400 mb-1">Nome</label><input id="client-name" type="text" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500"></div>
-        <div><label class="block text-sm text-slate-400 mb-1">Plataforma</label><select id="client-platform" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500"><option value="whatsapp">WhatsApp</option><option value="instagram">Instagram</option></select></div>
+        <div><label class="block text-sm text-slate-400 mb-1">Nome</label><input id="client-name" type="text" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:border-sky-500"></div>
+        <div><label class="block text-sm text-slate-400 mb-1">Plataforma</label><select id="client-platform" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"><option value="whatsapp">WhatsApp</option><option value="instagram">Instagram</option></select></div>
         <div class="md:col-span-2 flex gap-2"><button type="submit" class="bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-medium">Salvar</button><button type="button" onclick="hideClientForm()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm">Cancelar</button></div>
        </form>
       </div>
@@ -72,11 +70,12 @@
      <div id="flow-form-container" class="hidden mb-6 fade-in">
       <div class="bg-slate-900 border border-slate-700 rounded-xl p-5">
        <form onsubmit="saveFlow(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><label class="block text-sm text-slate-400 mb-1">Nome</label><input id="flow-name" type="text" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500"></div>
-        <div><label class="block text-sm text-slate-400 mb-1">Cliente</label><select id="flow-client" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500"></select></div>
-        <div><label class="block text-sm text-slate-400 mb-1">Gatilho</label><input id="flow-trigger" type="text" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500"></div>
-        <div class="md:col-span-2"><label class="block text-sm text-slate-400 mb-1">Resposta</label><textarea id="flow-response" required rows="3" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500"></textarea></div>
-        <div class="md:col-span-2 flex gap-2"><button type="submit" class="bg-sky-500 text-white px-4 py-2 rounded-lg text-sm">Salvar</button><button type="button" onclick="hideFlowForm()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm">Cancelar</button></div>
+        <div><label class="block text-sm text-slate-400 mb-1">Nome da Automação</label><input id="flow-name" type="text" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"></div>
+        <div><label class="block text-sm text-slate-400 mb-1">Escolha o Cliente</label><select id="flow-client" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"></select></div>
+        <div><label class="block text-sm text-slate-400 mb-1">Gatilho (ex: oi, preco)</label><input id="flow-trigger" type="text" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"></div>
+        <div><label class="block text-sm text-slate-400 mb-1">Plataforma</label><select id="flow-platform" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"><option value="whatsapp">WhatsApp</option><option value="instagram">Instagram</option></select></div>
+        <div class="md:col-span-2"><label class="block text-sm text-slate-400 mb-1">Resposta Automática</label><textarea id="flow-response" required rows="3" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"></textarea></div>
+        <div class="md:col-span-2 flex gap-2"><button type="submit" class="bg-sky-500 text-white px-4 py-2 rounded-lg text-sm">Salvar Automação</button><button type="button" onclick="hideFlowForm()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm">Cancelar</button></div>
        </form>
       </div>
      </div>
@@ -85,14 +84,22 @@
 
     <div id="view-templates" class="hidden fade-in">
      <h2 class="text-xl font-bold mb-6">Templates Prontos</h2>
-     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
-       <h3 class="font-semibold mb-2">👋 Boas-vindas</h3>
-       <button onclick="useTemplate('welcome')" class="w-full bg-sky-500 text-white px-3 py-2 rounded-lg text-xs">Usar Template</button>
+     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-slate-900 border border-slate-700 rounded-xl p-5 card-hover transition-all">
+       <div class="flex items-center gap-3 mb-4">
+           <div class="p-2 bg-sky-500/10 rounded-lg text-sky-400"><i data-lucide="hand"></i></div>
+           <h3 class="font-bold">Boas-vindas</h3>
+       </div>
+       <p class="text-sm text-slate-400 mb-4">Ideal para o primeiro contato com o cliente.</p>
+       <button onclick="useTemplate('welcome')" class="w-full bg-sky-500 hover:bg-sky-600 text-white py-2 rounded-lg text-sm font-medium transition-all">Configurar e Usar</button>
       </div>
-      <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
-       <h3 class="font-semibold mb-2">📅 Horário</h3>
-       <button onclick="useTemplate('hours')" class="w-full bg-sky-500 text-white px-3 py-2 rounded-lg text-xs">Usar Template</button>
+      <div class="bg-slate-900 border border-slate-700 rounded-xl p-5 card-hover transition-all">
+       <div class="flex items-center gap-3 mb-4">
+           <div class="p-2 bg-sky-500/10 rounded-lg text-sky-400"><i data-lucide="calendar"></i></div>
+           <h3 class="font-bold">Horário Comercial</h3>
+       </div>
+       <p class="text-sm text-slate-400 mb-4">Informa os horários de atendimento automaticamente.</p>
+       <button onclick="useTemplate('hours')" class="w-full bg-sky-500 hover:bg-sky-600 text-white py-2 rounded-lg text-sm font-medium transition-all">Configurar e Usar</button>
       </div>
      </div>
     </div>
@@ -104,7 +111,7 @@
       <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
        <div id="chat-messages" class="p-4 h-64 overflow-auto space-y-3"></div>
        <div class="border-t border-slate-700 p-3 flex gap-2">
-        <input id="chat-input" type="text" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm">
+        <input id="chat-input" type="text" placeholder="Digite um gatilho..." class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm">
         <button onclick="sendTestMessage()" class="bg-sky-500 text-white px-4 py-2 rounded-lg"><i data-lucide="send" class="w-4 h-4"></i></button>
        </div>
       </div>
@@ -117,29 +124,16 @@
    <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-lg w-full">
     <h3 class="font-bold text-lg mb-4 text-sky-400">Editar Automação</h3>
     <form onsubmit="saveEditedFlow(event)" class="grid grid-cols-1 gap-4">
-        <div><label class="block text-sm text-slate-400 mb-1">Nome do Fluxo</label><input id="edit-flow-name" type="text" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"></div>
+        <div><label class="block text-sm text-slate-400 mb-1">Nome</label><input id="edit-flow-name" type="text" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"></div>
         <div><label class="block text-sm text-slate-400 mb-1">Gatilho</label><input id="edit-flow-trigger" type="text" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"></div>
         <div><label class="block text-sm text-slate-400 mb-1">Plataforma</label><select id="edit-flow-platform" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"><option value="whatsapp">WhatsApp</option><option value="instagram">Instagram</option></select></div>
-        <div><label class="block text-sm text-slate-400 mb-1">Resposta Automática</label><textarea id="edit-flow-response" required rows="4" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"></textarea></div>
-        <div class="flex gap-2 justify-end mt-2"><button type="button" onclick="cancelEditFlow()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm">Cancelar</button><button type="submit" class="bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-medium">Salvar Alterações</button></div>
+        <div><label class="block text-sm text-slate-400 mb-1">Resposta</label><textarea id="edit-flow-response" required rows="4" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"></textarea></div>
+        <div class="flex gap-2 justify-end mt-2"><button type="button" onclick="cancelEditFlow()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm">Cancelar</button><button type="submit" class="bg-sky-500 text-white px-4 py-2 rounded-lg text-sm">Salvar Alterações</button></div>
     </form>
    </div>
   </div>
 
-  <div id="template-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-   <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-sm w-full">
-    <h3 class="font-bold text-lg mb-4">Aplicar Template</h3>
-    <label class="block text-sm text-slate-400 mb-2">Selecione o cliente:</label>
-    <select id="template-client" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm mb-4"></select>
-    <div class="flex gap-2 justify-end">
-        <button onclick="cancelTemplate()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm">Cancelar</button>
-        <button onclick="confirmTemplate(event)" class="bg-sky-500 text-white px-4 py-2 rounded-lg text-sm">Aplicar</button>
-    </div>
-   </div>
-  </div>
-
   <script>
-    // Configurações do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBFyBsYxFAfhkHX_KAe-9vFpJWm1S2okqM",
       authDomain: "painel-um-so.firebaseapp.com",
@@ -151,17 +145,14 @@
     };
 
     let allData = [];
-    let firebaseReady = false;
     let editingFlowId = null;
-    let selectedTemplate = null;
 
     async function initFirebase() {
       try {
         firebase.initializeApp(firebaseConfig);
         await firebase.auth().signInAnonymously();
-        firebaseReady = true;
         setupRealtimeSync();
-      } catch (err) { console.error('Firebase Error:', err); }
+      } catch (err) { console.error('Erro Firebase:', err); }
     }
 
     function setupRealtimeSync() {
@@ -172,9 +163,10 @@
       });
     }
 
-    async function saveToFirebase(data) { return firebase.database().ref('shared_data').push(data); }
-    async function updateInFirebase(id, data) { return firebase.database().ref(`shared_data/${id}`).set(data); }
-    async function deleteFromFirebase(id) { return firebase.database().ref(`shared_data/${id}`).remove(); }
+    // Ações DB
+    const saveToFirebase = (data) => firebase.database().ref('shared_data').push(data);
+    const updateInFirebase = (id, data) => firebase.database().ref(`shared_data/${id}`).set(data);
+    const deleteFromFirebase = (id) => firebase.database().ref(`shared_data/${id}`).remove();
 
     function renderAll() {
       const clients = allData.filter(d => d.type === 'client');
@@ -208,10 +200,7 @@
         return `
           <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 platform-${f.flow_platform}">
             <div class="flex justify-between items-center">
-              <div>
-                <h3 class="font-semibold text-sm">${esc(f.flow_name)}</h3>
-                <p class="text-xs text-slate-500">${client ? esc(client.client_name) : '---'} | Gatilho: ${esc(f.flow_trigger)}</p>
-              </div>
+              <div><h3 class="font-semibold text-sm">${esc(f.flow_name)}</h3><p class="text-xs text-slate-500">${client ? esc(client.client_name) : 'Sem cliente'} | Gatilho: ${esc(f.flow_trigger)}</p></div>
               <div class="flex gap-3">
                 <button onclick="editFlow('${f.__backendId}')" class="text-slate-400 hover:text-sky-400"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
                 <button onclick="deleteFromFirebase('${f.__backendId}')" class="text-slate-400 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
@@ -223,7 +212,7 @@
       lucide.createIcons();
     }
 
-    // LÓGICA DE EDIÇÃO
+    // Edição
     function editFlow(id) {
       const flow = allData.find(d => d.__backendId === id);
       if (!flow) return;
@@ -235,17 +224,11 @@
       document.getElementById('edit-flow-modal').classList.remove('hidden');
     }
 
-    function cancelEditFlow() {
-      document.getElementById('edit-flow-modal').classList.add('hidden');
-      editingFlowId = null;
-    }
+    function cancelEditFlow() { document.getElementById('edit-flow-modal').classList.add('hidden'); }
 
     async function saveEditedFlow(e) {
       e.preventDefault();
       const flow = allData.find(d => d.__backendId === editingFlowId);
-      const btn = e.target.querySelector('button[type="submit"]');
-      btn.disabled = true;
-
       const updated = {
         ...flow,
         flow_name: document.getElementById('edit-flow-name').value,
@@ -253,56 +236,29 @@
         flow_platform: document.getElementById('edit-flow-platform').value,
         flow_response: document.getElementById('edit-flow-response').value
       };
-
-      try {
-        await updateInFirebase(editingFlowId, updated);
-        showToast('Atualizado! ✨');
-        cancelEditFlow();
-      } catch (err) { showToast('Erro ao atualizar'); }
-      btn.disabled = false;
+      await updateInFirebase(editingFlowId, updated);
+      showToast('Automação atualizada! ✨');
+      cancelEditFlow();
     }
 
-    // LÓGICA DE TEMPLATES
+    // TEMPLATES (NOVA LÓGICA DE EDIÇÃO)
     const templates = {
-      welcome: { name: 'Boas-vindas', trigger: 'oi, olá', response: 'Olá! Como posso ajudar você hoje?' },
-      hours: { name: 'Horário de Funcionamento', trigger: 'horário, horas', response: 'Nosso horário é de segunda a sexta, das 09h às 18h.' }
+      welcome: { name: 'Boas-vindas', trigger: 'oi, olá', response: 'Olá! Seja bem-vindo ao nosso atendimento. Como podemos te ajudar?' },
+      hours: { name: 'Horário de Atendimento', trigger: 'horário, horas', response: 'Nosso horário de atendimento é de segunda a sexta, das 08h às 18h.' }
     };
 
     function useTemplate(key) {
-      selectedTemplate = key;
-      document.getElementById('template-modal').classList.remove('hidden');
+      const t = templates[key];
+      if (!t) return;
+      switchTab('flows');
+      showFlowForm();
+      document.getElementById('flow-name').value = t.name;
+      document.getElementById('flow-trigger').value = t.trigger;
+      document.getElementById('flow-response').value = t.response;
+      showToast('Template carregado! Escolha o cliente e salve.');
     }
 
-    function cancelTemplate() { document.getElementById('template-modal').classList.add('hidden'); }
-
-    async function confirmTemplate(e) {
-      const clientId = document.getElementById('template-client').value;
-      if (!clientId) return showToast('Selecione um cliente');
-      
-      const btn = e.target;
-      btn.disabled = true;
-      const t = templates[selectedTemplate];
-
-      const data = {
-        type: 'flow',
-        flow_name: t.name,
-        flow_client_id: clientId,
-        flow_trigger: t.trigger,
-        flow_response: t.response,
-        flow_platform: 'whatsapp',
-        flow_active: true,
-        created_at: new Date().toISOString()
-      };
-
-      try {
-        await saveToFirebase(data);
-        showToast('Template aplicado! ✨');
-        cancelTemplate();
-      } catch (err) { showToast('Erro ao aplicar'); }
-      btn.disabled = false;
-    }
-
-    // AUXILIARES
+    // Auxiliares
     function esc(s) { return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function showToast(m) {
       const t = document.createElement('div');
@@ -316,12 +272,13 @@
       const opts = '<option value="">Escolha um cliente...</option>' + clients.map(c => `<option value="${c.__backendId}">${esc(c.client_name)}</option>`).join('');
       document.getElementById('flow-client').innerHTML = opts;
       document.getElementById('preview-client').innerHTML = opts;
-      document.getElementById('template-client').innerHTML = opts;
     }
 
     function switchTab(t) {
-      ['clients', 'flows', 'templates', 'preview'].forEach(v => document.getElementById(`view-${v}`).classList.toggle('hidden', v !== t));
-      ['clients', 'flows', 'templates', 'preview'].forEach(v => document.getElementById(`tab-${v}`).classList.toggle('tab-active', v === t));
+      ['clients', 'flows', 'templates', 'preview'].forEach(v => {
+          document.getElementById(`view-${v}`).classList.toggle('hidden', v !== t);
+          document.getElementById(`tab-${v}`).classList.toggle('tab-active', v === t);
+      });
     }
 
     function showClientForm() { document.getElementById('client-form-container').classList.remove('hidden'); }
@@ -331,24 +288,23 @@
 
     async function saveClient(e) {
       e.preventDefault();
-      const data = { type: 'client', client_name: document.getElementById('client-name').value, client_platform: document.getElementById('client-platform').value, created_at: new Date().toISOString() };
-      await saveToFirebase(data);
+      await saveToFirebase({ type: 'client', client_name: document.getElementById('client-name').value, client_platform: document.getElementById('client-platform').value });
       e.target.reset(); hideClientForm(); showToast('Cliente salvo! ✨');
     }
 
     async function saveFlow(e) {
       e.preventDefault();
-      const data = { 
+      const clientId = document.getElementById('flow-client').value;
+      if(!clientId) return showToast('Selecione um cliente!');
+      await saveToFirebase({ 
         type: 'flow', 
         flow_name: document.getElementById('flow-name').value, 
-        flow_client_id: document.getElementById('flow-client').value,
+        flow_client_id: clientId,
         flow_trigger: document.getElementById('flow-trigger').value,
         flow_response: document.getElementById('flow-response').value,
-        flow_platform: 'whatsapp',
-        flow_active: true,
-        created_at: new Date().toISOString()
-      };
-      await saveToFirebase(data);
+        flow_platform: document.getElementById('flow-platform').value,
+        flow_active: true
+      });
       e.target.reset(); hideFlowForm(); showToast('Automação salva! ✨');
     }
 
@@ -357,17 +313,14 @@
       const text = input.value.trim().toLowerCase();
       const clientId = document.getElementById('preview-client').value;
       if (!text || !clientId) return;
-
       const chat = document.getElementById('chat-messages');
       chat.innerHTML += `<div class="flex justify-end"><div class="bg-sky-600 p-2 rounded-lg text-sm max-w-[80%]">${esc(text)}</div></div>`;
-      
       const flow = allData.find(f => f.type === 'flow' && f.flow_client_id === clientId && f.flow_trigger.toLowerCase().includes(text));
-      
       setTimeout(() => {
-        const reply = flow ? flow.flow_response : "Desculpe, não entendi esse gatilho.";
+        const reply = flow ? flow.flow_response : "Não entendi esse comando no teste.";
         chat.innerHTML += `<div class="flex justify-start"><div class="bg-slate-700 p-2 rounded-lg text-sm max-w-[80%]">${esc(reply)}</div></div>`;
         chat.scrollTop = chat.scrollHeight;
-      }, 600);
+      }, 500);
       input.value = '';
     }
 
