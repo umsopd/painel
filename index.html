@@ -33,7 +33,7 @@
      </div>
     </div>
     <div class="flex items-center gap-2 text-xs text-slate-500">
-        <span id="stats-clients">0 clientes</span> <span>•</span> <span id="stats-flows">0 fluxos</span>
+        <span id="stats-clients-header">0 clientes</span> <span>•</span> <span id="stats-flows-header">0 fluxos</span>
     </div>
    </header>
 
@@ -42,6 +42,7 @@
     <button onclick="switchTab('flows')" id="tab-flows" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white transition-all whitespace-nowrap">Automações</button> 
     <button onclick="switchTab('templates')" id="tab-templates" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white transition-all whitespace-nowrap">Templates</button> 
     <button onclick="switchTab('preview')" id="tab-preview" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white transition-all whitespace-nowrap">Testar Bot</button> 
+    <button onclick="switchTab('analytics')" id="tab-analytics" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white transition-all whitespace-nowrap">Relatórios</button>
    </nav>
 
    <main class="flex-1 overflow-auto p-6">
@@ -117,6 +118,21 @@
       </div>
      </div>
     </div>
+
+    <div id="view-analytics" class="hidden fade-in">
+        <h2 class="text-xl font-bold mb-6">Relatórios de Desempenho</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-slate-900 border border-slate-700 rounded-xl p-5">
+                <p class="text-xs text-slate-400 uppercase font-bold mb-1">Total de Clientes</p>
+                <p id="ana-total-clients" class="text-3xl font-bold text-sky-400">0</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-700 rounded-xl p-5">
+                <p class="text-xs text-slate-400 uppercase font-bold mb-1">Total de Fluxos</p>
+                <p id="ana-total-flows" class="text-3xl font-bold text-sky-400">0</p>
+            </div>
+        </div>
+    </div>
+
    </main>
   </div>
 
@@ -163,7 +179,6 @@
       });
     }
 
-    // Ações DB
     const saveToFirebase = (data) => firebase.database().ref('shared_data').push(data);
     const updateInFirebase = (id, data) => firebase.database().ref(`shared_data/${id}`).set(data);
     const deleteFromFirebase = (id) => firebase.database().ref(`shared_data/${id}`).remove();
@@ -172,8 +187,13 @@
       const clients = allData.filter(d => d.type === 'client');
       const flows = allData.filter(d => d.type === 'flow');
       
-      document.getElementById('stats-clients').textContent = `${clients.length} clientes`;
-      document.getElementById('stats-flows').textContent = `${flows.length} fluxos`;
+      // Header Stats
+      document.getElementById('stats-clients-header').textContent = `${clients.length} clientes`;
+      document.getElementById('stats-flows-header').textContent = `${flows.length} fluxos`;
+
+      // Analytics View Stats
+      document.getElementById('ana-total-clients').textContent = clients.length;
+      document.getElementById('ana-total-flows').textContent = flows.length;
 
       renderClients(clients);
       renderFlows(flows, clients);
@@ -182,20 +202,20 @@
 
     function renderClients(clients) {
       const list = document.getElementById('clients-list');
-      list.innerHTML = clients.map(c => `
+      list.innerHTML = clients.length ? clients.map(c => `
         <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 platform-${c.client_platform}">
           <div class="flex justify-between items-center">
             <div><h3 class="font-bold">${esc(c.client_name)}</h3><p class="text-xs text-slate-500">${c.client_platform}</p></div>
             <button onclick="deleteFromFirebase('${c.__backendId}')" class="text-slate-500 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
           </div>
         </div>
-      `).join('');
+      `).join('') : '<p class="text-slate-500 text-sm col-span-full text-center py-10">Nenhum cliente cadastrado.</p>';
       lucide.createIcons();
     }
 
     function renderFlows(flows, clients) {
       const list = document.getElementById('flows-list');
-      list.innerHTML = flows.map(f => {
+      list.innerHTML = flows.length ? flows.map(f => {
         const client = clients.find(c => c.__backendId === f.flow_client_id);
         return `
           <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 platform-${f.flow_platform}">
@@ -208,11 +228,10 @@
             </div>
           </div>
         `;
-      }).join('');
+      }).join('') : '<p class="text-slate-500 text-sm text-center py-10">Nenhuma automação cadastrada.</p>';
       lucide.createIcons();
     }
 
-    // Edição
     function editFlow(id) {
       const flow = allData.find(d => d.__backendId === id);
       if (!flow) return;
@@ -241,7 +260,6 @@
       cancelEditFlow();
     }
 
-    // TEMPLATES (NOVA LÓGICA DE EDIÇÃO)
     const templates = {
       welcome: { name: 'Boas-vindas', trigger: 'oi, olá', response: 'Olá! Seja bem-vindo ao nosso atendimento. Como podemos te ajudar?' },
       hours: { name: 'Horário de Atendimento', trigger: 'horário, horas', response: 'Nosso horário de atendimento é de segunda a sexta, das 08h às 18h.' }
@@ -258,7 +276,6 @@
       showToast('Template carregado! Escolha o cliente e salve.');
     }
 
-    // Auxiliares
     function esc(s) { return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function showToast(m) {
       const t = document.createElement('div');
@@ -275,9 +292,11 @@
     }
 
     function switchTab(t) {
-      ['clients', 'flows', 'templates', 'preview'].forEach(v => {
-          document.getElementById(`view-${v}`).classList.toggle('hidden', v !== t);
-          document.getElementById(`tab-${v}`).classList.toggle('tab-active', v === t);
+      ['clients', 'flows', 'templates', 'preview', 'analytics'].forEach(v => {
+          const view = document.getElementById(`view-${v}`);
+          const tab = document.getElementById(`tab-${v}`);
+          if(view) view.classList.toggle('hidden', v !== t);
+          if(tab) tab.classList.toggle('tab-active', v === t);
       });
     }
 
