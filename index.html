@@ -358,13 +358,22 @@
       document.getElementById('analytics-triggers').innerHTML = topTriggers.map(([trigger, count]) => `<div class="flex items-center justify-between text-xs bg-slate-950 p-2.5 rounded-xl border border-slate-900"><span class="font-semibold text-sky-400">"${esc(trigger)}"</span> <span class="text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-md">${count} acionamentos</span></div>`).join('') || '<p class="text-slate-500 text-xs py-2">Sem dados</p>';
     }
 
-    function updateSelects(clients) {
-      const opts = '<option value="">Selecione...</option>' + clients.map(c => `<option value="${c.__backendId}">${esc(c.client_name)}</option>`).join('');
-      ['flow-client', 'preview-client'].forEach(id => {
-          const el = document.getElementById(id);
-          if(el) el.innerHTML = opts;
-      });
-    }
+function updateSelects(clients) {
+  // Salva temporariamente quem estava selecionado antes da atualização
+  const previousFlowClient = document.getElementById('flow-client')?.value;
+  const previousPreviewClient = document.getElementById('preview-client')?.value;
+
+  const opts = '<option value="">Selecione...</option>' + clients.map(c => `<option value="${c.__backendId}">${esc(c.client_name)}</option>`).join('');
+  
+  ['flow-client', 'preview-client'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.innerHTML = opts;
+  });
+
+  // Devolve a seleção para os campos se o cliente ainda existir na lista
+  if (previousFlowClient) document.getElementById('flow-client').value = previousFlowClient;
+  if (previousPreviewClient) document.getElementById('preview-client').value = previousPreviewClient;
+}
 
     // MANIPULAÇÃO DE FORMULÁRIO E ESTADOS (CRIAÇÃO / EDIÇÃO)
     function editFlow(id) {
